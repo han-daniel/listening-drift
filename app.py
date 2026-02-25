@@ -517,10 +517,12 @@ def page_population():
 <div style="background: {_kf1_bg}; border-radius: 12px;
             padding: 20px 24px; border-left: 5px solid {_kf1_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf1_title}; text-transform: uppercase;
-                letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum, Not Categories</div>
+                letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
-        Users don't fall into neat "types." Behavior is continuously distributed across
-        intensity and diversity, with most users <b>drifting gradually</b> rather than jumping between clusters.
+        Listeners don't fall into fixed types. Behavior is continuously distributed across intensity
+        and diversity, and <b>87% of users</b> shift significantly over time. But these shifts are
+        unpredictable: consistency leads 42%, mood 36%, simultaneously 22%. No single metric
+        serves as a reliable early warning.
     </div>
 </div>""", unsafe_allow_html=True)
     with kf2:
@@ -528,10 +530,11 @@ def page_population():
 <div style="background: {_kf2_bg}; border-radius: 12px;
             padding: 20px 24px; border-left: 5px solid {_kf2_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
-                letter-spacing: 0.5px; margin-bottom: 8px;">Everyone Shifts Eventually</div>
+                letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
-        Nearly all users experience at least one large behavioral shift. The movement distribution
-        is <b>right-skewed</b> — most transitions are small, but occasional big moves are universal.
+        Volume and diversity are strongly correlated (<b>r = 0.67</b>). Top-quartile listeners
+        are <b>2.2x more diverse</b> than bottom-quartile. Heavier listeners don't fixate on
+        favorites; they branch out across artists, genres, and moods.
     </div>
 </div>""", unsafe_allow_html=True)
 
