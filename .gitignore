@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 pipeline.log
 nohup.out
+*.sql
+*.dump
+.claude/
