@@ -1281,92 +1281,116 @@ def page_methodology():
     st.markdown("## Methodology")
 
     st.markdown("""
-### Data Pipeline
+### How It Works
 
-1. **User Discovery** (`discover_users.py`): Seed users discovered via Last.fm's
-   friend network using breadth-first traversal starting from well-known accounts.
-
-2. **Listen Ingestion** (`ingest_users.py`): For each user, fetches up to 10,000
-   recent listens via `user.getRecentTracks`. Populates `users`, `artists`,
-   `tracks`, and `scrobbles` tables.
-
-3. **Artist Tag Enrichment** (`lastfm_tags.py`): Fetches top tags for each artist
-   with at least 5 listens via `artist.getTopTags`. Stores in `artist_tags`.
-
-4. **Daily Summaries** (`compute_daily_summary.py`): For each user-day, computes:
-   - `total_listens`, `unique_tracks`, `unique_artists`
-   - `peak_hour` (most common listening hour)
-   - `listen_entropy` (Shannon entropy over artist distribution)
-   - `pct_sad`, `pct_happy`, `pct_energetic`, `pct_chill` (mood proxies)
-   - `genre_entropy` (Shannon entropy over tag distribution)
-   - `genre_concentration` (proportion of top tag)
-   - `mood_entropy` (Shannon entropy over the 4 mood proportions)
-
-5. **Rolling Profiles** (`compute_rolling_profiles.py`): Slides a configurable window
-   (14, 30, or 60 days; 7-day step) across each user's daily summaries. Minimum
-   active days scale with window size (5, 10, 20). Computes averages/SD for each window.
+This dashboard turns raw listening history into a map of how people's music habits
+change over time. The pipeline collects listening data from Last.fm, summarizes it
+day by day, then builds rolling behavioral snapshots that capture *how much* someone
+listens and *how diverse* their taste is. Those snapshots are projected into a 2D
+space so you can see where a listener sits and how they move.
 
 ---
 
-### Tag-to-Mood Mapping
+### Data Collection
 
-Each Last.fm artist tag is mapped to zero or more of four mood buckets:
+**Finding users:** Starting from a few well-known Last.fm accounts, the pipeline
+crawls the friend network (breadth-first) to discover active listeners.
 
-| Mood | Example Tags |
-|------|-------------|
-| **Sad** | melancholy, dark, emo, doom, gothic, dsbm |
-| **Happy** | fun, upbeat, party, dance, pop, disco, ska |
-| **Energetic** | aggressive, metal, punk, hardcore, industrial |
-| **Chill** | ambient, calm, lounge, jazz, folk, acoustic |
+**Fetching history:** For each user, up to 10,000 recent listens are pulled from
+the Last.fm API. Each listen includes the track, artist, and timestamp.
 
-An artist receives a mood label if **any** of their tags matches that category.
-A single listen inherits all mood labels of its artist. Mood proportions are
-computed per user-day as the fraction of listens tagged with each mood.
+**Tagging artists:** Every artist's top tags are fetched from Last.fm and mapped
+to four mood categories — sad, happy, energetic, and chill — plus genre labels.
 
----
-
-### Entropy Metrics
-
-- **Artist Entropy**: Shannon entropy over the per-artist listen counts in a day.
-  High entropy = diverse listening; low = concentrated on few artists.
-
-- **Genre Entropy**: Shannon entropy over the per-tag listen counts (each listen
-  contributes once per tag of its artist). High = eclectic genre mix.
-
-- **Mood Entropy**: Shannon entropy over the normalized (sad, happy, energetic, chill)
-  proportions. High = balanced mood mix; low = one mood dominates.
+> *Technical detail: Tags are fetched via `artist.getTopTags`. An artist receives
+> a mood label if any of its tags match a keyword list (e.g., "melancholy" → sad,
+> "punk" → energetic). A single listen inherits all mood labels of its artist.*
 
 ---
 
-### PCA (Behavioral Space)
+### Daily Summaries
 
-Rolling profiles are standardized (z-scored) on 6 features:
-`avg_listens`, `sd_listens`, `avg_entropy`, `avg_genre_entropy`,
-`avg_mood_entropy`, `avg_genre_concentration`.
+Each user-day is distilled into a set of metrics that capture listening volume,
+diversity, and mood. For example: how many tracks were played, how many different
+artists appeared, and what fraction of listens were tagged as "sad" vs. "energetic."
 
-**PCA** (eigen-decomposition of covariance matrix) projects the 6D space into
-2 components for visualization:
-- **PC1** captures listening intensity (volume and consistency)
-- **PC2** captures diversity style (focused vs. eclectic)
+Diversity is measured using **entropy** — a way of quantifying how spread out
+someone's listening is. High entropy means lots of different artists or genres;
+low entropy means concentrated, repetitive listening.
 
-Windows with `avg_listens > 300` are excluded as outliers.
-
----
-
-### Behavioral Shift Detection
-
-For each user, **movement** is computed as the Euclidean distance between
-consecutive windows in PCA space. The distribution of movement magnitudes
-across all users characterizes how much listeners change over time.
+> *Technical detail: Three entropy metrics are computed per user-day —
+> artist entropy (Shannon entropy over per-artist listen counts),
+> genre entropy (over per-tag listen counts), and mood entropy (over the
+> four mood proportions). Additional features: `total_listens`, `unique_tracks`,
+> `unique_artists`, `peak_hour`, `genre_concentration` (proportion of top tag).*
 
 ---
 
-### Data Quality Filters
+### Rolling Behavioral Profiles
 
-- Users must have at least **100 active days** to appear in the dashboard
-- Data density must be at least **40%** (active days / calendar span)
-- Long leading/trailing gaps are auto-trimmed in the individual view
-- Gaps of 7+ days are shaded gray in time series charts
+Rather than looking at single days (which are noisy), the pipeline averages
+metrics over sliding windows of **14, 30, or 60 days** (stepping 7 days at a time).
+This produces a smooth behavioral profile for each window — a snapshot of someone's
+habits during that period.
+
+Shorter windows (14 days) capture rapid changes; longer windows (60 days)
+reveal stable trends. Each window size requires a minimum number of active days
+to avoid noisy estimates (5, 10, or 20 days respectively).
+
+> *Technical detail: For each window, the pipeline computes the mean and standard
+> deviation of 6 daily features: `avg_listens`, `sd_listens`, `avg_entropy`,
+> `avg_genre_entropy`, `avg_mood_entropy`, `avg_genre_concentration`.*
+
+---
+
+### Behavioral Space (PCA)
+
+Each rolling profile has 6 features — too many to visualize directly. **PCA**
+(Principal Component Analysis) reduces them to 2 dimensions that capture the
+most important variation across all users:
+
+- **Listening Intensity (PC1, horizontal):** How much and how consistently
+  someone listens. Further right = more daily listens, higher variability,
+  more total activity.
+- **Diversity Style (PC2, vertical):** How varied someone's taste is.
+  Higher up = more artists, broader genres, more varied moods.
+  Lower = focused, repetitive listening.
+
+This creates a map where each point is a user at a moment in time.
+Users who listen similarly end up near each other.
+
+> *Technical detail: The 6 features are z-score standardized, then PCA
+> (eigen-decomposition of the covariance matrix) extracts the top 2 components.
+> Windows with `avg_listens > 300` are excluded as outliers. K-means clustering
+> (k=5) groups windows into behavioral archetypes.*
+
+---
+
+### Movement & Behavioral Shifts
+
+**Movement** measures how far a user's position shifts between consecutive
+windows in the behavioral space (Euclidean distance in PCA coordinates).
+Small movement means stable habits; large movement means something changed —
+they started listening to very different music, or their volume spiked or dropped.
+
+The **comparison horizon** controls how far apart the compared windows are.
+A 7-day horizon captures week-to-week change; a 3-month horizon captures
+seasonal or life-event-driven shifts.
+
+> *Technical detail: Movement = Euclidean distance between consecutive
+> (or stride-separated) windows in 2D PCA space. The population distribution
+> of movement magnitudes is shown with mean, median, and 95th percentile markers.*
+
+---
+
+### Data Quality
+
+- Users need at least **100 active listening days** to appear in the dashboard
+- Data density must be at least **40%** (active days / total calendar span)
+- Leading and trailing gaps are auto-trimmed in the individual view
+- Gaps longer than 7 days are shaded gray in time series charts
+- Statistical outliers (outside 5th–95th percentile in PCA space) are excluded
+  from the population density map
 """)
 
 
