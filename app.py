@@ -152,7 +152,7 @@ st.markdown(f"""
 <style>
     {_dark_css}
     .block-container {{
-        max-width: 90vw;
+        max-width: 67.5vw;
         padding-left: 2rem;
         padding-right: 2rem;
     }}
@@ -1416,16 +1416,52 @@ which listeners are most behaviorally volatile.
 
 ---
 
-### Data Quality
+### Missing Data & Edge Cases
 
-- Users must have at least **100 active listening days** to appear in the dashboard
-- Data density must be at least **40%** (active days / total calendar span)
-- Leading and trailing gaps are auto-trimmed in the individual view
-- Gaps longer than 7 days are shaded gray in time series charts
-- Statistical outliers (outside 5th–95th percentile in PCA space) are excluded
-  from the population density map
-- The animated behavioral space only shows years with **≥10 users** for
-  meaningful density estimation
+Not every user listens every day, and not every artist has complete tag data.
+The pipeline handles these gaps at every stage rather than interpolating or
+filling in fake values.
+
+**NULL tag/mood data:** Many artists have no Last.fm tags, which means no genre
+or mood information. In SQL, `COALESCE(..., 0)` converts NULLs to 0 for entropy
+and mood fields. This means untagged days contribute zero to mood proportions
+rather than being excluded — a conservative choice that avoids inflating diversity
+metrics for users who happen to listen to well-tagged artists.
+
+**Sparse windows:** A 30-day window where the user only listened on 3 days would
+produce unreliable averages. Each window size enforces a minimum active-day
+threshold (5/10/20 days for 14/30/60-day windows). Windows that don't meet the
+threshold are silently dropped — no imputation, no interpolation.
+
+**Gap handling in charts:** Inactive periods are detected by scanning for
+consecutive days with no listens. Gaps ≥7 days are shaded gray in time series
+charts so they're visually obvious. Line traces are broken across gaps
+(`connectgaps=False`) — the chart never draws a line through a period with no
+data, avoiding the false impression of a smooth transition.
+
+**Active window trimming:** Some users have a handful of scattered early listens
+followed by a long gap before their main listening period. The individual view
+auto-detects these leading/trailing gaps (threshold: 30 days) and trims the
+date range to the user's core active period.
+
+**Outlier exclusion:** For the population density map, users outside the
+5th–95th percentile in PCA space are excluded to prevent extreme outliers from
+distorting the color scale. They still appear in all other analyses. Windows
+with `avg_listens > 300` are excluded before PCA fitting to prevent
+extreme-volume outliers from dominating the principal components.
+
+---
+
+### Data Quality Filters
+
+| Filter | Threshold | Reason |
+|--------|-----------|--------|
+| Minimum active days | 100 | Ensures enough data for meaningful behavioral profiles |
+| Minimum data density | 40% | Excludes users with sporadic listening across long spans |
+| PCA outlier clip | 5th–95th percentile | Prevents extreme users from distorting the density map |
+| Volume outlier | avg_listens > 300 | Prevents extreme volume from dominating PCA axes |
+| Year minimum | ≥10 users | Ensures population density is meaningful per year |
+| Gap shading | ≥7 days (or ≥30 for long histories) | Scales to data range: strict for short spans, lenient for multi-year |
 """)
 
 
