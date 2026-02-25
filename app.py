@@ -1405,6 +1405,14 @@ st.sidebar.caption(
     "Tip: **Double-click** any chart to reset the view. "
     "Use **Cmd + minus** to adjust browser zoom."
 )
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    '<div style="text-align: center; font-size: 12px; opacity: 0.6;">'
+    '© 2025 <a href="https://handaniel.me" target="_blank" '
+    'style="color: inherit; text-decoration: underline;">Daniel Han</a>'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
 if page == "Population Overview":
     page_population()
