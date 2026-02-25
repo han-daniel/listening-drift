@@ -1452,6 +1452,33 @@ extreme-volume outliers from dominating the principal components.
 
 ---
 
+### Visual Smoothing
+
+While the data pipeline never interpolates or fills in missing values, the
+visualization layer applies several smoothing techniques to improve readability:
+
+**Rolling averages in time series:** All individual time series charts (listens,
+entropy, mood proportions) display a centered rolling mean over the user-selected
+window size. This uses `min_periods=1`, so edges of the data range still get
+smoothed — just with fewer contributing points. The raw daily values are shown
+as faint dots underneath.
+
+**Gaussian smoothing on the density map:** The population behavioral space
+bins users into a 120×120 grid, then applies a Gaussian filter (σ=0.5) to
+produce a smooth density surface. Without this, the heatmap would appear
+pixelated and noisy due to the sparse bin counts per year.
+
+**Animation interpolation:** The year-to-year animation inserts 4 intermediate
+frames between each pair of years, computed by linearly blending the two
+density grids: **z = z_prev × (1 − α) + z_next × α**. This creates smooth
+morphing transitions rather than abrupt jumps between years.
+
+**Listening heatmap:** The hour-by-day heatmap fills missing hours with 0
+(`fillna(0)`), which is semantically correct — no listens in that hour means
+zero, not missing data.
+
+---
+
 ### Data Quality Filters
 
 | Filter | Threshold | Reason |
