@@ -521,8 +521,7 @@ def page_population():
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
         Listeners don't fall into fixed types. Behavior is continuously distributed across intensity
         and diversity, and <b>87% of users</b> shift significantly over time. But these shifts are
-        unpredictable: consistency leads 42%, mood 36%, simultaneously 22%. No single metric
-        serves as a reliable early warning.
+        unpredictable: consistency leads 42%, mood 36%, simultaneously 22%.
     </div>
 </div>""", unsafe_allow_html=True)
     with kf2:
@@ -534,8 +533,7 @@ def page_population():
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
         Volume and diversity are strongly correlated (<b>r = 0.67</b>). Top-quartile listeners
         are <b>2.2x more diverse</b> than bottom-quartile. Heavier listeners don't fixate on
-        favorites; they branch out across artists, genres, and moods. This pattern holds
-        across all time windows, suggesting it reflects a stable trait rather than noise.
+        favorites; they branch out across artists, genres, and moods.
     </div>
 </div>""", unsafe_allow_html=True)
 
