@@ -515,7 +515,7 @@ def page_population():
     with kf1:
         st.markdown(f"""
 <div style="background: {_kf1_bg}; border-radius: 12px;
-            padding: 20px 24px; border-left: 5px solid {_kf1_border};">
+            padding: 20px 24px; border-left: 5px solid {_kf1_border}; min-height: 150px;">
     <div style="font-size: 13px; font-weight: 700; color: {_kf1_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
@@ -528,7 +528,7 @@ def page_population():
     with kf2:
         st.markdown(f"""
 <div style="background: {_kf2_bg}; border-radius: 12px;
-            padding: 20px 24px; border-left: 5px solid {_kf2_border};">
+            padding: 20px 24px; border-left: 5px solid {_kf2_border}; min-height: 150px;">
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
