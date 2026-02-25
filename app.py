@@ -468,8 +468,8 @@ def page_population():
         "Analysis of ~3M listening events across 303 Last.fm users reveals that "
         "listening behavior exists on a continuous spectrum rather than discrete types. "
         "Most users maintain stable patterns, but nearly all experience significant "
-        "behavioral shifts over time, primarily driven by changes in listening "
-        "consistency rather than volume or diversity."
+        "behavioral shifts over time — changes in how much they listen, how diverse "
+        "their taste is, or both."
     )
 
     stats = load_population_stats()
@@ -517,10 +517,10 @@ def page_population():
 <div style="background: {_kf1_bg}; border-radius: 12px;
             padding: 20px 24px; border-left: 5px solid {_kf1_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf1_title}; text-transform: uppercase;
-                letter-spacing: 0.5px; margin-bottom: 8px;">Consistency Drives Shifts</div>
+                letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum, Not Categories</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
-        Consistency (standard deviation of daily listens) is the primary driver of behavioral shifts,
-        with <b>7x larger changes</b> than normal transitions.
+        Users don't fall into neat "types." Behavior is continuously distributed across
+        intensity and diversity, with most users <b>drifting gradually</b> rather than jumping between clusters.
     </div>
 </div>""", unsafe_allow_html=True)
     with kf2:
@@ -528,10 +528,10 @@ def page_population():
 <div style="background: {_kf2_bg}; border-radius: 12px;
             padding: 20px 24px; border-left: 5px solid {_kf2_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
-                letter-spacing: 0.5px; margin-bottom: 8px;">Mood as Leading Indicator</div>
+                letter-spacing: 0.5px; margin-bottom: 8px;">Everyone Shifts Eventually</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
-        For ~19% of users, mood shifts precede consistency changes by approximately
-        <b>7 days</b>, suggesting mood as a leading behavioral indicator.
+        Nearly all users experience at least one large behavioral shift. The movement distribution
+        is <b>right-skewed</b> — most transitions are small, but occasional big moves are universal.
     </div>
 </div>""", unsafe_allow_html=True)
 
