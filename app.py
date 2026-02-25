@@ -1,11 +1,11 @@
 """
-Music Listening Behavior Dashboard
+Listening Drift — Music Behavior Analytics Dashboard
 Multi-page Streamlit app backed by PostgreSQL.
 
 Pages:
-  1. Population Overview — PCA density heatmap, movement distribution, shift stats
-  2. Individual Deep Dive — PCA position over time, time series, shift markers
-  3. Methodology — pipeline explanation, tag-to-mood mapping, PCA, shift detection
+  1. Population Overview — behavioral space animation, movement distribution
+  2. Individual Deep Dive — PCA position over time, daily time series, listening heatmap
+  3. Methodology — pipeline explanation, PCA, movement analysis
 """
 
 import streamlit as st
