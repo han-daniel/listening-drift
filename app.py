@@ -1297,32 +1297,53 @@ space so you can see where a listener sits and how they move.
 crawls the friend network (breadth-first) to discover active listeners.
 
 **Fetching history:** For each user, up to 10,000 recent listens are pulled from
-the Last.fm API. Each listen includes the track, artist, and timestamp.
+the Last.fm API via `user.getRecentTracks`. Each listen includes the track, artist,
+and timestamp. Data is stored across four normalized tables: `users`, `artists`,
+`tracks`, and `scrobbles`.
 
-**Tagging artists:** Every artist's top tags are fetched from Last.fm and mapped
-to four mood categories — sad, happy, energetic, and chill — plus genre labels.
+**Tagging artists:** Every artist's top tags are fetched from Last.fm via
+`artist.getTopTags` (filtered to artists with at least 5 listens) and stored
+in an `artist_tags` table. Each tag is then mapped to zero or more of four mood
+categories using keyword matching:
 
-> *Technical detail: Tags are fetched via `artist.getTopTags`. An artist receives
-> a mood label if any of its tags match a keyword list (e.g., "melancholy" → sad,
-> "punk" → energetic). A single listen inherits all mood labels of its artist.*
+| Mood | Example Tags |
+|------|-------------|
+| **Sad** | melancholy, dark, emo, doom, gothic, dsbm |
+| **Happy** | fun, upbeat, party, dance, pop, disco, ska |
+| **Energetic** | aggressive, metal, punk, hardcore, industrial |
+| **Chill** | ambient, calm, lounge, jazz, folk, acoustic |
+
+An artist receives a mood label if **any** of its tags match that category.
+A single listen inherits all mood labels of its artist — so an artist tagged
+both "melancholy" and "ambient" would count toward both sad and chill.
 
 ---
 
 ### Daily Summaries
 
-Each user-day is distilled into a set of metrics that capture listening volume,
-diversity, and mood. For example: how many tracks were played, how many different
-artists appeared, and what fraction of listens were tagged as "sad" vs. "energetic."
+Each user-day is distilled into a rich set of metrics that capture listening
+volume, diversity, and mood:
 
-Diversity is measured using **entropy** — a way of quantifying how spread out
-someone's listening is. High entropy means lots of different artists or genres;
-low entropy means concentrated, repetitive listening.
+| Feature | Description |
+|---------|-------------|
+| `total_listens` | Number of tracks played that day |
+| `unique_tracks` | Distinct tracks |
+| `unique_artists` | Distinct artists |
+| `peak_hour` | Most common listening hour (0–23) |
+| `listen_entropy` | Shannon entropy over per-artist listen counts |
+| `genre_entropy` | Shannon entropy over per-tag listen counts |
+| `genre_concentration` | Proportion of listens from the top tag |
+| `mood_entropy` | Shannon entropy over the 4 mood proportions |
+| `pct_sad`, `pct_happy`, `pct_energetic`, `pct_chill` | Fraction of listens tagged with each mood |
 
-> *Technical detail: Three entropy metrics are computed per user-day —
-> artist entropy (Shannon entropy over per-artist listen counts),
-> genre entropy (over per-tag listen counts), and mood entropy (over the
-> four mood proportions). Additional features: `total_listens`, `unique_tracks`,
-> `unique_artists`, `peak_hour`, `genre_concentration` (proportion of top tag).*
+**What is entropy?** A way of quantifying how spread out someone's listening is.
+If you only listen to one artist all day, artist entropy is 0. If you listen to
+20 artists equally, entropy is high. The same logic applies to genres and moods.
+Formally, Shannon entropy: **H = −Σ p(x) log₂ p(x)**.
+
+Mood proportions are computed per user-day as the fraction of listens whose artist
+carries each mood tag. Since artists can have multiple mood tags, proportions
+may sum to more than 1.
 
 ---
 
@@ -1335,11 +1356,18 @@ habits during that period.
 
 Shorter windows (14 days) capture rapid changes; longer windows (60 days)
 reveal stable trends. Each window size requires a minimum number of active days
-to avoid noisy estimates (5, 10, or 20 days respectively).
+to avoid noisy estimates:
 
-> *Technical detail: For each window, the pipeline computes the mean and standard
-> deviation of 6 daily features: `avg_listens`, `sd_listens`, `avg_entropy`,
-> `avg_genre_entropy`, `avg_mood_entropy`, `avg_genre_concentration`.*
+| Window Size | Min Active Days | Best For |
+|-------------|----------------|----------|
+| **14 days** | 5 | Rapid changes, short-term events |
+| **30 days** | 10 | Default balance of stability and responsiveness |
+| **60 days** | 20 | Long-term trends, seasonal patterns |
+
+For each window, the pipeline computes the mean and standard deviation of 6 daily
+features, producing a 6-dimensional behavioral fingerprint:
+`avg_listens`, `sd_listens`, `avg_entropy`, `avg_genre_entropy`,
+`avg_mood_entropy`, `avg_genre_concentration`.
 
 ---
 
@@ -1347,7 +1375,10 @@ to avoid noisy estimates (5, 10, or 20 days respectively).
 
 Each rolling profile has 6 features — too many to visualize directly. **PCA**
 (Principal Component Analysis) reduces them to 2 dimensions that capture the
-most important variation across all users:
+most important variation across all users.
+
+The 6 features are first z-score standardized (mean=0, std=1), then PCA extracts
+the top 2 principal components via eigen-decomposition of the covariance matrix:
 
 - **Listening Intensity (PC1, horizontal):** How much and how consistently
   someone listens. Further right = more daily listens, higher variability,
@@ -1357,12 +1388,10 @@ most important variation across all users:
   Lower = focused, repetitive listening.
 
 This creates a map where each point is a user at a moment in time.
-Users who listen similarly end up near each other.
+Users who listen similarly end up near each other. **K-means clustering** (k=5)
+groups windows into behavioral archetypes, giving each point a cluster label.
 
-> *Technical detail: The 6 features are z-score standardized, then PCA
-> (eigen-decomposition of the covariance matrix) extracts the top 2 components.
-> Windows with `avg_listens > 300` are excluded as outliers. K-means clustering
-> (k=5) groups windows into behavioral archetypes.*
+Windows with `avg_listens > 300` are excluded as outliers before PCA fitting.
 
 ---
 
@@ -1375,22 +1404,28 @@ they started listening to very different music, or their volume spiked or droppe
 
 The **comparison horizon** controls how far apart the compared windows are.
 A 7-day horizon captures week-to-week change; a 3-month horizon captures
-seasonal or life-event-driven shifts.
+seasonal or life-event-driven shifts. Formally:
 
-> *Technical detail: Movement = Euclidean distance between consecutive
-> (or stride-separated) windows in 2D PCA space. The population distribution
-> of movement magnitudes is shown with mean, median, and 95th percentile markers.*
+**movement = √((PC1ₜ − PC1ₜ₋ₛ)² + (PC2ₜ − PC2ₜ₋ₛ)²)**
+
+where *s* is the stride (number of 7-day steps between compared windows).
+
+The population distribution of movement magnitudes is displayed with mean,
+median, and 95th percentile reference lines. Per-user summaries highlight
+which listeners are most behaviorally volatile.
 
 ---
 
 ### Data Quality
 
-- Users need at least **100 active listening days** to appear in the dashboard
+- Users must have at least **100 active listening days** to appear in the dashboard
 - Data density must be at least **40%** (active days / total calendar span)
 - Leading and trailing gaps are auto-trimmed in the individual view
 - Gaps longer than 7 days are shaded gray in time series charts
 - Statistical outliers (outside 5th–95th percentile in PCA space) are excluded
   from the population density map
+- The animated behavioral space only shows years with **≥10 users** for
+  meaningful density estimation
 """)
 
 
