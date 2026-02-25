@@ -152,7 +152,7 @@ st.markdown(f"""
 <style>
     {_dark_css}
     .block-container {{
-        max-width: 75vw;
+        max-width: 90vw;
         padding-left: 2rem;
         padding-right: 2rem;
     }}
