@@ -515,7 +515,7 @@ def page_population():
     with kf1:
         st.markdown(f"""
 <div style="background: {_kf1_bg}; border-radius: 12px;
-            padding: 20px 24px; border-left: 5px solid {_kf1_border}; min-height: 150px;">
+            padding: 20px 24px; border-left: 5px solid {_kf1_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf1_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
@@ -528,13 +528,14 @@ def page_population():
     with kf2:
         st.markdown(f"""
 <div style="background: {_kf2_bg}; border-radius: 12px;
-            padding: 20px 24px; border-left: 5px solid {_kf2_border}; min-height: 150px;">
+            padding: 20px 24px; border-left: 5px solid {_kf2_border};">
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
         Volume and diversity are strongly correlated (<b>r = 0.67</b>). Top-quartile listeners
         are <b>2.2x more diverse</b> than bottom-quartile. Heavier listeners don't fixate on
-        favorites; they branch out across artists, genres, and moods.
+        favorites; they branch out across artists, genres, and moods. This pattern holds
+        across all time windows, suggesting it reflects a stable trait rather than noise.
     </div>
 </div>""", unsafe_allow_html=True)
 
