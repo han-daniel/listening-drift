@@ -973,11 +973,13 @@ shows how the population's distribution of these traits evolves year to year.
                     "#### Log-Transformed Movement"
                 )
                 st.markdown(
-                    "Applying a log transform reveals that movement magnitudes follow "
-                    "an approximately **log-normal distribution**. The heavy right tail "
-                    "compresses, and the mean and median nearly converge — confirming that "
-                    "most behavioral transitions are small and similarly sized, with large "
-                    "shifts being exponentially rarer."
+                    "The raw distribution above is heavily right-skewed — a long tail of "
+                    "rare, large shifts stretches the average far above the median. Taking "
+                    "the **natural log** of each movement compresses that tail and reveals "
+                    "the underlying shape: an approximately **bell-shaped (normal) curve**. "
+                    "This tells us that behavioral shifts follow a **log-normal pattern** — "
+                    "most transitions are small and similarly sized, while large shifts are "
+                    "exponentially rarer, not just uncommon."
                 )
 
                 log_col, qq_col = st.columns(2)
@@ -1073,14 +1075,29 @@ shows how the population's distribution of these traits evolves year to year.
                                  "Captures the multiplicative spread of movement sizes")
 
                 st.markdown(
-                    f"After log transformation, the mean–median gap shrinks to just "
-                    f"**{mean_med_diff:.3f}** (from {abs(mean_move - med_move):.3f} in raw space) "
-                    f"and skewness drops to **{log_skew:.2f}**, confirming approximate normality. "
-                    f"The Q-Q plot shows observed quantiles closely tracking the theoretical "
-                    f"normal line, with minor deviations only at the extremes. "
-                    f"This log-normal pattern means movement magnitudes are governed by "
-                    f"multiplicative processes — small percentage changes in listening behavior "
-                    f"compound, making large absolute shifts exponentially less common."
+                    f"After log transformation, the mean–median gap shrinks from "
+                    f"**{abs(mean_move - med_move):.3f}** to just **{mean_med_diff:.3f}**, "
+                    f"and skewness drops to **{log_skew:.2f}** — both near zero, confirming "
+                    f"the distribution is now approximately symmetric."
+                )
+                st.markdown(
+                    "**How to read the Q-Q plot:** Each dot compares one slice of the real data "
+                    "to where it *would* fall if the distribution were perfectly normal. If every "
+                    "dot sat on the red dashed line, the data would be exactly normal. "
+                    "The middle of the plot tracks the line closely, meaning the bulk of behavior "
+                    "is well described by a bell curve. At the **lower-left**, dots curve below "
+                    "the line — there are more near-zero movements than a normal distribution "
+                    "predicts (more users staying very still). At the **upper-right**, dots lift "
+                    "above the line — there are more large jumps than expected (the occasional "
+                    "dramatic shift). Statisticians call these **heavy tails**."
+                )
+                st.markdown(
+                    "**Takeaway:** Listening behavior changes follow a predictable statistical "
+                    "pattern. Week to week, most people's habits barely budge. When shifts do "
+                    "happen, small ones are common and large ones are rare — but not *as* rare "
+                    "as a perfectly smooth bell curve would predict. In other words, most of the "
+                    "time you're on autopilot, but when you do change, the change can be "
+                    "surprisingly big."
                 )
 
     else:
