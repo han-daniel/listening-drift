@@ -532,9 +532,10 @@ def page_population():
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
-        Volume and diversity are strongly correlated (<b>r = 0.67</b>). Top-quartile listeners
-        are <b>2.2x more diverse</b> than bottom-quartile. Heavier listeners don't fixate on
-        favorites; they branch out across artists, genres, and moods.
+        Listening intensity and diversity style are strongly correlated (<b>r = 0.67</b>)
+        in the raw features, before PCA. Users in the top quartile of daily listens are
+        <b>2.2x more diverse</b> than those in the bottom quartile — heavier listeners
+        don't fixate on favorites; they branch out across artists, genres, and moods.
     </div>
 </div>""", unsafe_allow_html=True)
 
