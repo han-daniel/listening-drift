@@ -776,6 +776,14 @@ shows how the population's distribution evolves year to year.
             "Gaussian blur smooths the result so patterns are visible over noise."
         )
         st.markdown(
+            "**Reading the axes:** PC1 and PC2 scores are in standard-deviation units centered "
+            "at zero. A score of 0 means average for the population. Positive means above average, "
+            "negative means below. For example, a point at PC1 = 1.0, PC2 = 0.3 represents a user "
+            "whose overall engagement is 1 standard deviation above average, and whose exploration "
+            "style leans slightly more exploratory than typical. The density value at that point "
+            "tells you how common that behavioral profile is across all users and time windows."
+        )
+        st.markdown(
             f"**What the shape tells us:** Notice the **upward tilt** — the high-engagement "
             f"half (right) sits **{_tilt_diff:.2f} units higher** in exploration style than the "
             f"low-engagement half (left). This visually confirms the raw finding: users who listen "
