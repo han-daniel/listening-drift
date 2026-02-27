@@ -777,11 +777,13 @@ shows how the population's distribution evolves year to year.
         )
         st.markdown(
             "**Reading the axes:** PC1 and PC2 scores are in standard-deviation units centered "
-            "at zero. A score of 0 means average for the population. Positive means above average, "
-            "negative means below. For example, a point at PC1 = 1.0, PC2 = 0.3 represents a user "
-            "whose overall engagement is 1 standard deviation above average, and whose exploration "
-            "style leans slightly more exploratory than typical. The density value at that point "
-            "tells you how common that behavioral profile is across all users and time windows."
+            "at zero (the population mean). Positive means above average, negative means below. "
+            "For example, a point at PC1 = 1.0, PC2 = 0.3 represents a user whose overall "
+            "engagement is 1 SD above average, with a slightly more exploratory style than typical. "
+            "The density color is **relative within each year** — 1.0 (brightest) marks the single "
+            "most crowded cell in that frame, and everything else is scaled proportionally. "
+            "The peak density doesn't have to sit at (0, 0) because the distribution is skewed: "
+            "the *average* is at zero, but the *most common* profile is offset from the average."
         )
         st.markdown(
             f"**What the shape tells us:** Notice the **upward tilt** — the high-engagement "
