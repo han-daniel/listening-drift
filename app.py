@@ -521,8 +521,9 @@ def page_population():
                 letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
         Listeners don't fall into fixed types. Behavior is continuously distributed across intensity
-        and diversity, and <b>87% of users</b> shift significantly over time. But these shifts are
-        unpredictable: consistency leads 42%, mood 36%, simultaneously 22%.
+        and diversity, and <b>87% of users</b> experience at least one top-decile shift (above the 90th
+        percentile of all transitions). But these shifts are unpredictable: consistency leads 42%,
+        mood 36%, simultaneously 22%.
     </div>
 </div>""", unsafe_allow_html=True)
     with kf2:
@@ -861,8 +862,8 @@ shows how the population's distribution of these traits evolves year to year.
             mean_move = movement_vals.mean()
             med_move = movement_vals.median()
             std_move = movement_vals.std()
+            p90_move = movement_vals.quantile(0.90)
             p95_move = movement_vals.quantile(0.95)
-            pct_large = (movement_vals > 1.0).mean() * 100
 
             # Metric row
             mc1, mc2, mc3, mc4 = st.columns(4)
@@ -871,12 +872,12 @@ shows how the population's distribution of these traits evolves year to year.
             mc2.metric("Median", f"{med_move:.2f}",
                        help="Half of all transitions are smaller than this. "
                             "Low median means most behavior is stable week to week")
-            mc3.metric("Std Dev", f"{std_move:.2f}",
-                       help="Spread of movement distances. "
-                            "High std dev means some transitions are much larger than others")
-            mc4.metric("Large Shifts (>1.0)", f"{pct_large:.1f}%",
-                       help="Percentage of transitions where users moved more than 1.0 units "
-                            "in behavioral space, representing significant behavioral change")
+            mc3.metric("90th Percentile", f"{p90_move:.2f}",
+                       help="Only 10% of transitions are larger than this. "
+                            "Movements above this threshold represent significant behavioral shifts")
+            mc4.metric("95th Percentile", f"{p95_move:.2f}",
+                       help="Only 5% of transitions are larger than this — "
+                            "the most dramatic behavioral changes in the dataset")
 
             # Clip to 95th percentile to remove long tail
             clipped = movement_vals[movement_vals <= p95_move]
@@ -889,20 +890,14 @@ shows how the population's distribution of these traits evolves year to year.
                 opacity=0.8,
                 hovertemplate="Movement: %{x:.2f}<br>Count: %{y}<extra></extra>",
             ))
-            fig_move.add_vline(x=mean_move, line_dash="dot", line_color="#00CC96",
-                               line_width=2)
             fig_move.add_vline(x=med_move, line_dash="dot", line_color="#EF553B",
+                               line_width=2)
+            fig_move.add_vline(x=p90_move, line_dash="dot", line_color="#00CC96",
                                line_width=2)
             fig_move.add_vline(x=p95_move, line_dash="dot", line_color="#AB63FA",
                                line_width=2)
 
             # Stats legend: colored text labels on vlines
-            fig_move.add_annotation(
-                x=mean_move, y=0.97, xref="x", yref="paper",
-                text=f"Mean: {mean_move:.2f}",
-                showarrow=False, font=dict(size=11, color="#00CC96"),
-                xanchor="left", yanchor="top", xshift=4,
-            )
             fig_move.add_annotation(
                 x=med_move, y=0.97, xref="x", yref="paper",
                 text=f"Median: {med_move:.2f}",
@@ -910,7 +905,13 @@ shows how the population's distribution of these traits evolves year to year.
                 xanchor="left", yanchor="top", xshift=4,
             )
             fig_move.add_annotation(
-                x=p95_move, y=0.97, xref="x", yref="paper",
+                x=p90_move, y=0.97, xref="x", yref="paper",
+                text=f"90th: {p90_move:.2f}",
+                showarrow=False, font=dict(size=11, color="#00CC96"),
+                xanchor="left", yanchor="top", xshift=4,
+            )
+            fig_move.add_annotation(
+                x=p95_move, y=0.87, xref="x", yref="paper",
                 text=f"95th: {p95_move:.2f}",
                 showarrow=False, font=dict(size=11, color="#AB63FA"),
                 xanchor="left", yanchor="top", xshift=4,
@@ -947,8 +948,9 @@ shows how the population's distribution of these traits evolves year to year.
             skew_dir = "right-skewed" if mean_move > med_move else "left-skewed"
             st.markdown(
                 f"The distribution is **{skew_dir}** (mean {mean_move:.2f} vs. median {med_move:.2f}). "
-                f"**{pct_volatile:.0f}%** of users ({n_volatile}/{n_users_move}) are above-average movers, "
-                f"and **{pct_large:.1f}%** of all transitions exceed 1.0 units. "
+                f"**{pct_volatile:.0f}%** of users ({n_volatile}/{n_users_move}) are above-average movers. "
+                f"The 90th percentile sits at **{p90_move:.2f}** — only 10% of transitions are larger, "
+                f"making it a natural threshold for \"significant shift.\" "
                 f"The largest single jump: **{max_max:.2f}**."
             )
 
@@ -1154,7 +1156,7 @@ shows how the population's distribution of these traits evolves year to year.
             <td style="padding: 8px;">Default recs work — low-touch, don't disrupt</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px;">High movement (> 1.0)</td>
+            <td style="padding: 8px;">High movement (above 90th pctl)</td>
             <td style="padding: 8px;">Significant behavioral shift in progress</td>
             <td style="padding: 8px;">Adapt rec strategy now — old model is stale</td>
         </tr>
