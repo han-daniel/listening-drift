@@ -520,8 +520,9 @@ def page_population():
     <div style="font-size: 13px; font-weight: 700; color: {_kf1_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
-        Listeners don't fall into fixed types. Behavior is continuously distributed across intensity
-        and diversity, and <b>87% of users</b> experience at least one top-decile shift. But these shifts are unpredictable: consistency leads 42%,
+        Listeners don't fall into fixed types. Behavior is continuously distributed
+        across intensity and diversity, and <b>87% of users</b> experience at least one
+        top-decile shift. These shifts are unpredictable: consistency leads 42%,
         mood 36%, simultaneously 22%.
     </div>
 </div>""", unsafe_allow_html=True)
@@ -532,12 +533,10 @@ def page_population():
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
-        In the raw data, users who listen more also listen more broadly — top-quartile
-        listeners are <b>2.2x more diverse</b> than bottom-quartile (<b>r = 0.67</b>).
-        PCA absorbs this shared variance into PC1, so the map below separates
-        intensity from diversity. The visible downward tilt means that <i>after</i>
-        accounting for overall activity level, higher-intensity users skew slightly
-        narrower in taste.
+        Users who listen more also listen more broadly — top-quartile listeners are
+        <b>2.2x more diverse</b> than bottom-quartile (<b>r = 0.67</b>). Heavier
+        listeners don't fixate on favorites; they branch out across artists,
+        genres, and moods.
     </div>
 </div>""", unsafe_allow_html=True)
 
@@ -771,6 +770,59 @@ shows how the population's distribution of these traits evolves year to year.
             f"the heaviest listeners tend to be slightly more focused in their taste — "
             f"they listen a lot, but from a narrower pool of artists and genres."
         )
+
+        # ── Feature Correlation Heatmap ──
+        with st.expander("Feature correlations (before PCA)", expanded=False):
+            st.markdown(
+                "The behavioral space above is built from 6 features that are "
+                "**strongly intercorrelated** before PCA transforms them into independent axes. "
+                "This heatmap shows those raw relationships — the r = 0.67 between volume "
+                "and diversity is visible here as the warm cells connecting listen counts "
+                "to entropy metrics."
+            )
+            _feat_cols = [
+                "avg_listens", "sd_listens", "avg_entropy",
+                "avg_genre_entropy", "avg_mood_entropy", "avg_genre_concentration",
+            ]
+            _feat_labels = [
+                "Avg Listens", "SD Listens", "Artist Entropy",
+                "Genre Entropy", "Mood Entropy", "Genre Concentration",
+            ]
+            _feat_data = rp_valid[_feat_cols].dropna()
+            if len(_feat_data) > 50:
+                _corr = _feat_data.corr()
+                # Mask upper triangle for cleaner display
+                _mask = np.triu(np.ones_like(_corr, dtype=bool), k=1)
+                _corr_masked = _corr.where(~_mask)
+
+                _corr_text = _corr.round(2).astype(str)
+                _corr_text = _corr_text.where(~_mask, "")
+
+                fig_corr = go.Figure(data=go.Heatmap(
+                    z=_corr_masked.values,
+                    x=_feat_labels,
+                    y=_feat_labels,
+                    text=_corr_text.values,
+                    texttemplate="%{text}",
+                    textfont=dict(size=12),
+                    colorscale="RdBu_r",
+                    zmid=0,
+                    zmin=-1,
+                    zmax=1,
+                    colorbar=dict(title="r", thickness=15),
+                    hovertemplate="%{y} × %{x}<br>r = %{z:.2f}<extra></extra>",
+                ))
+                fig_corr.update_layout(
+                    **{k: v for k, v in CHART_LAYOUT.items() if k != "hovermode"},
+                    title=dict(text="Pairwise Feature Correlations (Pre-PCA)",
+                               font=_title_font, x=0.01, xanchor="left"),
+                    height=420,
+                    width=520,
+                    xaxis=dict(side="bottom"),
+                    yaxis=dict(autorange="reversed"),
+                    hovermode="closest",
+                )
+                st.plotly_chart(fig_corr, use_container_width=False, config=PLOTLY_CONFIG)
 
         # ── Data-driven year-over-year interpretation ──
         yearly = rp_inliers.groupby("year").agg(
