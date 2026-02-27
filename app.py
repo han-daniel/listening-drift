@@ -1092,12 +1092,14 @@ shows how the population's distribution of these traits evolves year to year.
                     "dramatic shift). Statisticians call these **heavy tails**."
                 )
                 st.markdown(
-                    "**Takeaway:** Listening behavior changes follow a predictable statistical "
-                    "pattern. Week to week, most people's habits barely budge. When shifts do "
-                    "happen, small ones are common and large ones are rare — but not *as* rare "
-                    "as a perfectly smooth bell curve would predict. In other words, most of the "
-                    "time you're on autopilot, but when you do change, the change can be "
-                    "surprisingly big."
+                    "**Takeaway:** Week to week, most people's listening intensity (how much "
+                    "they listen) and diversity style (how varied their taste is) barely budge. "
+                    "When someone *does* shift — say, going from casual background listening to "
+                    "heavy daily sessions, or from a narrow set of favorites to a wide exploration "
+                    "phase — small nudges are common and dramatic overhauls are rare. But the "
+                    "heavy tails tell us those big reinventions happen more often than pure chance "
+                    "would predict. People don't just drift gradually; occasionally, their "
+                    "listening habits genuinely transform."
                 )
 
     else:
