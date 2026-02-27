@@ -765,7 +765,7 @@ shows how the population's distribution evolves year to year.
         _low_eng = rp_inliers[rp_inliers["pc1"] <= _pc1_med]
         _avg_expl_high = _high_eng["pc2"].mean()
         _avg_expl_low = _low_eng["pc2"].mean()
-        _tilt_diff = abs(_avg_expl_high - _avg_expl_low)
+        _tilt_diff = _avg_expl_high - _avg_expl_low  # negative = downward tilt
 
         st.markdown(
             "**Reading the density map:** The color at each point represents how many "
@@ -786,12 +786,16 @@ shows how the population's distribution evolves year to year.
             "the *average* is at zero, but the *most common* profile is offset from the average."
         )
         st.markdown(
-            f"**What the shape tells us:** Notice the **upward tilt** — the high-engagement "
-            f"half (right) sits **{_tilt_diff:.2f} units higher** in exploration style than the "
-            f"low-engagement half (left). This visually confirms the raw finding: users who listen "
-            f"more also explore more broadly. The tilt exists even after PCA separates the axes, "
-            f"because the volume\u2013diversity relationship is strong enough to leave a residual "
-            f"signature in the second component."
+            f"**What the shape tells us:** The population clusters left of center — most users "
+            f"have low-to-moderate engagement. Notice the **downward tilt**: the high-engagement "
+            f"half (right) sits **{abs(_tilt_diff):.2f} units lower** in exploration style than "
+            f"the low-engagement half (left). This isn't a contradiction with the r = 0.67 finding "
+            f"— PC1 already captures the fact that volume and diversity rise together. What PC2 "
+            f"shows is the **residual**: *after* accounting for overall engagement, the most active "
+            f"listeners lean slightly more focused (concentrated genres, less mood variety), while "
+            f"less active listeners lean more exploratory. Think of it as: heavy listeners explore "
+            f"more in absolute terms (the r = 0.67), but slightly less than you'd expect given "
+            f"how much they listen (the tilt)."
         )
 
         # ── Feature Correlation Heatmap ──
