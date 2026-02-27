@@ -753,6 +753,25 @@ to far more diverse music, or their daily volume drops — that's a behavioral s
 shows how the population's distribution of these traits evolves year to year.
 </div>""", unsafe_allow_html=True)
 
+        # ── Density shape interpretation ──
+        _pc1_med = rp_inliers["pc1"].median()
+        _pc2_med = rp_inliers["pc2"].median()
+        _high_int = rp_inliers[rp_inliers["pc1"] > _pc1_med]
+        _low_int = rp_inliers[rp_inliers["pc1"] <= _pc1_med]
+        _avg_div_high = _high_int["pc2"].mean()
+        _avg_div_low = _low_int["pc2"].mean()
+        _tilt_diff = _avg_div_low - _avg_div_high
+
+        st.markdown(
+            f"**What the density shows:** The population clusters in the center-right — "
+            f"most users listen at moderate-to-high intensity with moderate diversity. "
+            f"Notice the **downward tilt**: the low-intensity half (left) sits "
+            f"**{_tilt_diff:.2f} units higher** in diversity on average than the high-intensity "
+            f"half (right). In other words, once you account for overall activity level, "
+            f"the heaviest listeners tend to be slightly more focused in their taste — "
+            f"they listen a lot, but from a narrower pool of artists and genres."
+        )
+
         # ── Data-driven year-over-year interpretation ──
         yearly = rp_inliers.groupby("year").agg(
             avg_pc1=("pc1", "mean"), avg_pc2=("pc2", "mean"),
