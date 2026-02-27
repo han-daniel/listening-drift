@@ -861,7 +861,8 @@ shows how the population's distribution evolves year to year.
                     hovertemplate="%{x}<br>r = %{y:.2f}<extra>PC2</extra>",
                 ))
                 fig_pc_corr.update_layout(
-                    **{k: v for k, v in CHART_LAYOUT.items() if k != "hovermode"},
+                    **{k: v for k, v in CHART_LAYOUT.items()
+                       if k not in ("hovermode", "legend")},
                     title=dict(text="Feature Correlations with PCA Axes",
                                font=_title_font, x=0.01, xanchor="left"),
                     barmode="group",
