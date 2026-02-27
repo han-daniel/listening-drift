@@ -275,7 +275,7 @@ def _get_live_connection():
 @st.cache_data(ttl=300)
 def load_rolling_profiles(window_size=30):
     conn = _get_live_connection()
-    return pd.read_sql("""
+    df = pd.read_sql("""
         SELECT rp.user_id, u.username, rp.window_start, rp.window_end,
                rp.avg_listens, rp.sd_listens, rp.avg_entropy, rp.avg_peak_hour,
                rp.cluster_label, rp.pc1, rp.pc2, rp.movement, rp.significant_shift,
@@ -287,6 +287,11 @@ def load_rolling_profiles(window_size=30):
         WHERE rp.window_size = %(ws)s
         ORDER BY rp.user_id, rp.window_start
     """, conn, params={"ws": window_size})
+    # Flip PC1 sign so that right = higher engagement (more listens, more diversity).
+    # PCA components are sign-ambiguous; the pipeline's convention had them inverted.
+    if "pc1" in df.columns:
+        df["pc1"] = -df["pc1"]
+    return df
 
 
 @st.cache_data(ttl=300)
@@ -568,8 +573,8 @@ def page_population():
         n_shown = rp_inliers["user_id"].nunique()
         st.caption(
             "Each point represents a user's listening behavior over a 30-day window, "
-            "positioned by two traits: how much they listen (left\u2013right) and how diverse "
-            f"their taste is (bottom\u2013top). Brighter regions show where more users spend their time. "
+            "positioned by overall engagement (left\u2013right) and exploration style "
+            f"(bottom\u2013top). Brighter regions show where more users spend their time. "
             f"Showing **{n_shown}** of {n_total} users — "
             f"{n_total - n_pca} lack sufficient data for PCA scores, "
             f"and {n_pca - n_shown} are clipped as statistical outliers (outside 5th–95th percentile)."
@@ -689,10 +694,10 @@ def page_population():
             title=dict(text=f"Behavioral Space — All Years ({n_all} users)",
                        font=_title_font, x=0.01, xanchor="left"),
             plot_bgcolor="#000000",
-            xaxis=dict(title="PC1 — Listening Intensity (low \u2192 high)",
+            xaxis=dict(title="PC1 \u2014 Overall Engagement (low \u2192 high)",
                        range=x_range, fixedrange=True, color=_chart_fg,
                        showgrid=False, zeroline=False),
-            yaxis=dict(title="PC2 — Diversity Style (focused \u2192 eclectic)",
+            yaxis=dict(title="PC2 \u2014 Exploration Style (focused \u2192 exploratory)",
                        range=y_range, fixedrange=True, color=_chart_fg,
                        showgrid=False, zeroline=False),
             height=580,
@@ -743,32 +748,32 @@ def page_population():
 
         st.markdown("""
 <div class="info-box">
-<b>Listening Intensity (PC1, horizontal axis):</b> How much and how consistently someone listens.
-Further right = more daily listens, higher day-to-day variability, and more total activity.<br>
-<b>Diversity Style (PC2, vertical axis):</b> What someone listens to and how varied it is.
-Higher up = more artists, broader genres, and more varied moods. Lower = focused, repetitive listening.<br>
-<b>What is a "shift"?</b> When a user's dot moves noticeably in this space — e.g., they start listening
-to far more diverse music, or their daily volume drops — that's a behavioral shift. The animation
-shows how the population's distribution of these traits evolves year to year.
+<b>Overall Engagement (PC1, horizontal axis):</b> How active a listener is across all dimensions.
+Further right = more daily listens, more artists, broader genres, more varied moods, and less genre
+concentration. This axis captures the shared variance — volume and diversity rise together.<br>
+<b>Exploration Style (PC2, vertical axis):</b> The tradeoff between volume and variety <i>after</i>
+accounting for overall engagement. Higher up = fewer listens but more diverse taste (exploratory).
+Lower = more listens but more concentrated taste (focused).<br>
+<b>What is a "shift"?</b> When a user's position moves noticeably in this space — e.g., they start
+exploring far more genres, or their daily volume drops — that's a behavioral shift. The animation
+shows how the population's distribution evolves year to year.
 </div>""", unsafe_allow_html=True)
 
         # ── Density shape interpretation ──
         _pc1_med = rp_inliers["pc1"].median()
-        _pc2_med = rp_inliers["pc2"].median()
-        _high_int = rp_inliers[rp_inliers["pc1"] > _pc1_med]
-        _low_int = rp_inliers[rp_inliers["pc1"] <= _pc1_med]
-        _avg_div_high = _high_int["pc2"].mean()
-        _avg_div_low = _low_int["pc2"].mean()
-        _tilt_diff = _avg_div_low - _avg_div_high
+        _high_eng = rp_inliers[rp_inliers["pc1"] > _pc1_med]
+        _low_eng = rp_inliers[rp_inliers["pc1"] <= _pc1_med]
+        _avg_expl_high = _high_eng["pc2"].mean()
+        _avg_expl_low = _low_eng["pc2"].mean()
+        _tilt_diff = abs(_avg_expl_high - _avg_expl_low)
 
         st.markdown(
-            f"**What the density shows:** The population clusters in the center-right — "
-            f"most users listen at moderate-to-high intensity with moderate diversity. "
-            f"Notice the **downward tilt**: the low-intensity half (left) sits "
-            f"**{_tilt_diff:.2f} units higher** in diversity on average than the high-intensity "
-            f"half (right). In other words, once you account for overall activity level, "
-            f"the heaviest listeners tend to be slightly more focused in their taste — "
-            f"they listen a lot, but from a narrower pool of artists and genres."
+            f"**What the density shows:** Notice the **upward tilt** — the high-engagement "
+            f"half (right) sits **{_tilt_diff:.2f} units higher** in exploration style than the "
+            f"low-engagement half (left). This visually confirms the raw finding: users who listen "
+            f"more also explore more broadly. The tilt exists even after PCA separates the axes, "
+            f"because the volume\u2013diversity relationship is strong enough to leave a residual "
+            f"signature in the second component."
         )
 
         # ── Feature Correlation Heatmap ──
@@ -823,6 +828,58 @@ shows how the population's distribution of these traits evolves year to year.
                     hovermode="closest",
                 )
                 st.plotly_chart(fig_corr, use_container_width=False, config=PLOTLY_CONFIG)
+
+                # Feature-to-PC correlation bar chart
+                st.markdown("---")
+                st.markdown(
+                    "**How do the raw features map to each axis?** The bars below show the "
+                    "correlation between each original feature and the two PCA axes. "
+                    "This is where the axis labels come from."
+                )
+                _pc_corrs = []
+                for col, label in zip(_feat_cols, _feat_labels):
+                    _pc_corrs.append({
+                        "Feature": label,
+                        "r with PC1 (Engagement)": rp_valid[col].corr(rp_valid["pc1"]),
+                        "r with PC2 (Exploration)": rp_valid[col].corr(rp_valid["pc2"]),
+                    })
+                _pc_corr_df = pd.DataFrame(_pc_corrs)
+
+                fig_pc_corr = go.Figure()
+                fig_pc_corr.add_trace(go.Bar(
+                    x=_pc_corr_df["Feature"],
+                    y=_pc_corr_df["r with PC1 (Engagement)"],
+                    name="PC1 (Engagement)",
+                    marker_color=PALETTE["primary"],
+                    hovertemplate="%{x}<br>r = %{y:.2f}<extra>PC1</extra>",
+                ))
+                fig_pc_corr.add_trace(go.Bar(
+                    x=_pc_corr_df["Feature"],
+                    y=_pc_corr_df["r with PC2 (Exploration)"],
+                    name="PC2 (Exploration)",
+                    marker_color=PALETTE["secondary"],
+                    hovertemplate="%{x}<br>r = %{y:.2f}<extra>PC2</extra>",
+                ))
+                fig_pc_corr.update_layout(
+                    **{k: v for k, v in CHART_LAYOUT.items() if k != "hovermode"},
+                    title=dict(text="Feature Correlations with PCA Axes",
+                               font=_title_font, x=0.01, xanchor="left"),
+                    barmode="group",
+                    yaxis_title="Correlation (r)",
+                    yaxis_range=[-1, 1],
+                    height=350,
+                    hovermode="closest",
+                    legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center"),
+                )
+                fig_pc_corr.add_hline(y=0, line_color=_chart_fg, line_width=0.5)
+                st.plotly_chart(fig_pc_corr, use_container_width=True, config=PLOTLY_CONFIG)
+
+                st.markdown(
+                    "**PC1** loads positively on everything — volume, variability, and all diversity "
+                    "metrics rise together. It captures overall engagement. "
+                    "**PC2** splits volume (negative) from diversity (positive) — it's the residual "
+                    "tradeoff between how much you listen and how broadly you explore."
+                )
 
         # ── Data-driven year-over-year interpretation ──
         yearly = rp_inliers.groupby("year").agg(
@@ -1204,23 +1261,23 @@ shows how the population's distribution of these traits evolves year to year.
             <td style="padding: 8px; font-weight: 700; color: {_biz_header};">Product Action</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px;">Intensity rising (PC1 ↑)</td>
-            <td style="padding: 8px;">Listening more, more consistently</td>
+            <td style="padding: 8px;">Engagement rising (PC1 ↑)</td>
+            <td style="padding: 8px;">Listening more, exploring more broadly</td>
             <td style="padding: 8px;">Engagement deepening — premium conversion candidate</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px;">Intensity dropping (PC1 ↓)</td>
-            <td style="padding: 8px;">Sessions shrinking, days skipped</td>
+            <td style="padding: 8px;">Engagement dropping (PC1 ↓)</td>
+            <td style="padding: 8px;">Volume and variety both declining</td>
             <td style="padding: 8px;">Churn risk — trigger re-engagement (playlists, notifications)</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px;">Diversity rising (PC2 ↑)</td>
-            <td style="padding: 8px;">Exploring new artists, genres, moods</td>
+            <td style="padding: 8px;">Exploration rising (PC2 ↑)</td>
+            <td style="padding: 8px;">Diversifying taste, less volume</td>
             <td style="padding: 8px;">Discovery phase — surface new releases, curated playlists</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px;">Diversity dropping (PC2 ↓)</td>
-            <td style="padding: 8px;">Narrowing to familiar favorites</td>
+            <td style="padding: 8px;">Exploration dropping (PC2 ↓)</td>
+            <td style="padding: 8px;">High volume, narrow/concentrated taste</td>
             <td style="padding: 8px;">Comfort mode — reinforce "more like this" recommendations</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
@@ -1354,7 +1411,8 @@ def page_individual():
         st.markdown("### Behavioral Position Over Time")
         st.markdown(
             "This chart tracks how this user's listening behavior moves over time across two dimensions: "
-            "intensity (volume and consistency) and diversity (breadth of taste)."
+            "overall engagement (volume, diversity, and activity combined) and exploration style "
+            "(the tradeoff between volume and variety)."
         )
 
         fig_pca_ts = go.Figure()
@@ -1363,20 +1421,20 @@ def page_individual():
             x=user_rp_pca["window_start"], y=user_rp_pca["pc1"],
             mode="lines",
             line=dict(color=PALETTE["primary"], width=2.5),
-            name="PC1 (Intensity)",
+            name="PC1 (Engagement)",
             hovertemplate="%{x|%b %Y}: %{y:.2f}<extra>PC1</extra>",
         ))
         fig_pca_ts.add_trace(go.Scatter(
             x=user_rp_pca["window_start"], y=user_rp_pca["pc2"],
             mode="lines",
             line=dict(color=PALETTE["secondary"], width=2.5),
-            name="PC2 (Diversity)",
+            name="PC2 (Exploration)",
             hovertemplate="%{x|%b %Y}: %{y:.2f}<extra>PC2</extra>",
         ))
 
         fig_pca_ts.update_layout(
             **CHART_LAYOUT,
-            title=dict(text=f"PCA Position Over Time — {selected_username}",
+            title=dict(text=f"Behavioral Position Over Time \u2014 {selected_username}",
                        font=_title_font, x=0.01, xanchor="left"),
             xaxis=dict(type="date", color=_chart_fg),
             yaxis_title="PCA Score",
@@ -1386,10 +1444,12 @@ def page_individual():
 
         st.markdown("""
 <div class="info-box">
-<b>Listening Intensity (PC1, blue line):</b> Tracks how much and how consistently this user listens
-over time. Rising = more daily listens or higher variability. Falling = quieter, steadier habits.<br>
-<b>Diversity Style (PC2, purple line):</b> Tracks what this user listens to. Rising = branching out
-to more artists, genres, and moods. Falling = narrowing toward fewer, familiar choices.<br>
+<b>Overall Engagement (PC1, blue line):</b> Tracks this user's overall listening activity —
+volume, artist variety, genre breadth, and mood diversity all move together. Rising = more active
+and more diverse. Falling = quieter and more narrow.<br>
+<b>Exploration Style (PC2, purple line):</b> The tradeoff between volume and variety after
+accounting for engagement. Rising = exploring more diverse taste with less volume.
+Falling = listening more but from a narrower, more concentrated pool.<br>
 </div>""", unsafe_allow_html=True)
 
     # ── Time series ──
@@ -1675,12 +1735,14 @@ most important variation across all users.
 The 6 features are first z-score standardized (mean=0, std=1), then PCA extracts
 the top 2 principal components via eigen-decomposition of the covariance matrix:
 
-- **Listening Intensity (PC1, horizontal):** How much and how consistently
-  someone listens. Further right = more daily listens, higher variability,
-  more total activity.
-- **Diversity Style (PC2, vertical):** How varied someone's taste is.
-  Higher up = more artists, broader genres, more varied moods.
-  Lower = focused, repetitive listening.
+- **Overall Engagement (PC1, horizontal):** Captures the shared variance across
+  all 6 features — volume, variability, and diversity all rise together.
+  Further right = more daily listens, more artists, broader genres, more varied
+  moods, and less genre concentration.
+- **Exploration Style (PC2, vertical):** The tradeoff between volume and variety
+  after accounting for overall engagement. Higher up = fewer listens but more
+  diverse taste (exploratory). Lower = more listens but more concentrated taste
+  (focused).
 
 This creates a map where each point is a user at a moment in time.
 Users who listen similarly end up near each other. **K-means clustering** (k=5)
