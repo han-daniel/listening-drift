@@ -765,7 +765,7 @@ shows how the population's distribution evolves year to year.
         _low_eng = rp_inliers[rp_inliers["pc1"] <= _pc1_med]
         _avg_expl_high = _high_eng["pc2"].mean()
         _avg_expl_low = _low_eng["pc2"].mean()
-        _tilt_diff = _avg_expl_high - _avg_expl_low  # negative = downward tilt
+        _tilt_diff = _avg_expl_high - _avg_expl_low
 
         st.markdown(
             "**Reading the density map:** The color at each point represents how many "
@@ -787,15 +787,11 @@ shows how the population's distribution evolves year to year.
         )
         st.markdown(
             f"**What the shape tells us:** The population clusters left of center — most users "
-            f"have low-to-moderate engagement. Notice the **downward tilt**: the high-engagement "
-            f"half (right) sits **{abs(_tilt_diff):.2f} units lower** in exploration style than "
-            f"the low-engagement half (left). This isn't a contradiction with the r = 0.67 finding "
-            f"— PC1 already captures the fact that volume and diversity rise together. What PC2 "
-            f"shows is the **residual**: *after* accounting for overall engagement, the most active "
-            f"listeners lean slightly more focused (concentrated genres, less mood variety), while "
-            f"less active listeners lean more exploratory. Think of it as: heavy listeners explore "
-            f"more in absolute terms (the r = 0.67), but slightly less than you'd expect given "
-            f"how much they listen (the tilt)."
+            f"have low-to-moderate engagement. Notice the **upward tilt**: the high-engagement "
+            f"half (right) sits **{_tilt_diff:.2f} units higher** in exploration style than "
+            f"the low-engagement half (left). Even after PCA separates these into independent "
+            f"axes, more engaged users still lean more exploratory — reinforcing the raw r = 0.67 "
+            f"finding that volume and diversity go hand in hand."
         )
 
         # ── Feature Correlation Heatmap ──
@@ -1043,6 +1039,8 @@ shows how the population's distribution evolves year to year.
                 opacity=0.8,
                 hovertemplate="Movement: %{x:.2f}<br>Count: %{y}<extra></extra>",
             ))
+            fig_move.add_vline(x=mean_move, line_dash="dot", line_color="#FFA15A",
+                               line_width=2)
             fig_move.add_vline(x=med_move, line_dash="dot", line_color="#EF553B",
                                line_width=2)
             fig_move.add_vline(x=p90_move, line_dash="dot", line_color="#00CC96",
@@ -1052,7 +1050,13 @@ shows how the population's distribution evolves year to year.
 
             # Stats legend: colored text labels on vlines
             fig_move.add_annotation(
-                x=med_move, y=0.97, xref="x", yref="paper",
+                x=mean_move, y=0.97, xref="x", yref="paper",
+                text=f"Mean: {mean_move:.2f}",
+                showarrow=False, font=dict(size=11, color="#FFA15A"),
+                xanchor="left", yanchor="top", xshift=4,
+            )
+            fig_move.add_annotation(
+                x=med_move, y=0.87, xref="x", yref="paper",
                 text=f"Median: {med_move:.2f}",
                 showarrow=False, font=dict(size=11, color="#EF553B"),
                 xanchor="left", yanchor="top", xshift=4,
