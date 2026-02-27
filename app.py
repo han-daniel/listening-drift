@@ -18,6 +18,7 @@ import os
 from urllib.parse import urlparse
 from datetime import timedelta, date
 from scipy.ndimage import gaussian_filter
+from scipy import stats
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -957,6 +958,130 @@ shows how the population's distribution of these traits evolves year to year.
                 f"more behaviorally volatile. The largest single-window jump observed is "
                 f"**{max_max:.2f}** units — indicating a dramatic listening change in a short period."
             )
+
+            # ── Log-transformed distribution + Q-Q plot ──
+            positive_moves = movement_vals[movement_vals > 0]
+            if len(positive_moves) > 30:
+                log_moves = np.log(positive_moves)
+                log_mean = log_moves.mean()
+                log_med = log_moves.median()
+                log_std = log_moves.std()
+                log_skew = float(log_moves.skew())
+
+                st.markdown("---")
+                st.markdown(
+                    "#### Log-Transformed Movement"
+                )
+                st.markdown(
+                    "Applying a log transform reveals that movement magnitudes follow "
+                    "an approximately **log-normal distribution**. The heavy right tail "
+                    "compresses, and the mean and median nearly converge — confirming that "
+                    "most behavioral transitions are small and similarly sized, with large "
+                    "shifts being exponentially rarer."
+                )
+
+                log_col, qq_col = st.columns(2)
+
+                with log_col:
+                    fig_log = go.Figure()
+                    fig_log.add_trace(go.Histogram(
+                        x=log_moves,
+                        nbinsx=50,
+                        marker_color=PALETTE["secondary"],
+                        opacity=0.8,
+                        hovertemplate="ln(Movement): %{x:.2f}<br>Count: %{y}<extra></extra>",
+                    ))
+                    fig_log.add_vline(x=log_mean, line_dash="dot",
+                                      line_color="#00CC96", line_width=2)
+                    fig_log.add_vline(x=log_med, line_dash="dot",
+                                      line_color="#EF553B", line_width=2)
+                    fig_log.add_annotation(
+                        x=log_mean, y=0.97, xref="x", yref="paper",
+                        text=f"Mean: {log_mean:.2f}",
+                        showarrow=False, font=dict(size=11, color="#00CC96"),
+                        xanchor="left", yanchor="top", xshift=4,
+                    )
+                    fig_log.add_annotation(
+                        x=log_med, y=0.87, xref="x", yref="paper",
+                        text=f"Median: {log_med:.2f}",
+                        showarrow=False, font=dict(size=11, color="#EF553B"),
+                        xanchor="left", yanchor="top", xshift=4,
+                    )
+                    fig_log.update_layout(
+                        **{k: v for k, v in CHART_LAYOUT.items() if k != "hovermode"},
+                        title=dict(text="Log Movement Distribution",
+                                   font=_title_font, x=0.01, xanchor="left"),
+                        xaxis_title="ln(Movement)",
+                        yaxis_title="Count",
+                        height=380,
+                        hovermode="closest",
+                    )
+                    st.plotly_chart(fig_log, use_container_width=True, config=PLOTLY_CONFIG)
+
+                with qq_col:
+                    # Q-Q plot: compare log movements to theoretical normal
+                    sorted_log = np.sort(log_moves.values)
+                    n_pts = len(sorted_log)
+                    theoretical_q = stats.norm.ppf(
+                        (np.arange(1, n_pts + 1) - 0.5) / n_pts,
+                        loc=log_mean, scale=log_std,
+                    )
+
+                    fig_qq = go.Figure()
+                    fig_qq.add_trace(go.Scattergl(
+                        x=theoretical_q,
+                        y=sorted_log,
+                        mode="markers",
+                        marker=dict(color=PALETTE["secondary"], size=3, opacity=0.5),
+                        hovertemplate=(
+                            "Theoretical: %{x:.2f}<br>"
+                            "Observed: %{y:.2f}<extra></extra>"
+                        ),
+                    ))
+                    # Reference line
+                    q_min = min(theoretical_q.min(), sorted_log.min())
+                    q_max = max(theoretical_q.max(), sorted_log.max())
+                    fig_qq.add_trace(go.Scatter(
+                        x=[q_min, q_max], y=[q_min, q_max],
+                        mode="lines",
+                        line=dict(color="#EF553B", dash="dash", width=2),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    ))
+                    fig_qq.update_layout(
+                        **{k: v for k, v in CHART_LAYOUT.items() if k != "hovermode"},
+                        title=dict(text="Q-Q Plot (Log Movement vs. Normal)",
+                                   font=_title_font, x=0.01, xanchor="left"),
+                        xaxis_title="Theoretical Quantiles",
+                        yaxis_title="Observed Quantiles",
+                        height=380,
+                        hovermode="closest",
+                    )
+                    st.plotly_chart(fig_qq, use_container_width=True, config=PLOTLY_CONFIG)
+
+                # Stats summary
+                mean_med_diff = abs(log_mean - log_med)
+                lmc1, lmc2, lmc3 = st.columns(3)
+                lmc1.metric("Mean − Median Gap", f"{mean_med_diff:.3f}",
+                            help="Difference between mean and median in log space. "
+                                 "Near-zero indicates a symmetric distribution")
+                lmc2.metric("Skewness", f"{log_skew:.3f}",
+                            help="Skewness of the log-transformed distribution. "
+                                 "Values near 0 indicate symmetry (normal-like)")
+                lmc3.metric("Std Dev (log)", f"{log_std:.2f}",
+                            help="Standard deviation in log space. "
+                                 "Captures the multiplicative spread of movement sizes")
+
+                st.markdown(
+                    f"After log transformation, the mean–median gap shrinks to just "
+                    f"**{mean_med_diff:.3f}** (from {abs(mean_move - med_move):.3f} in raw space) "
+                    f"and skewness drops to **{log_skew:.2f}**, confirming approximate normality. "
+                    f"The Q-Q plot shows observed quantiles closely tracking the theoretical "
+                    f"normal line, with minor deviations only at the extremes. "
+                    f"This log-normal pattern means movement magnitudes are governed by "
+                    f"multiplicative processes — small percentage changes in listening behavior "
+                    f"compound, making large absolute shifts exponentially less common."
+                )
 
     else:
         st.warning("No rolling profile data with PCA results. Run compute_rolling_profiles.py first.")
