@@ -1111,16 +1111,22 @@ shows how the population's distribution of these traits evolves year to year.
         _biz_text = "#b2dfdb" if dark else "#004d40"
         _biz_header = "#4db6ac" if dark else "#00695c"
 
+        st.markdown("")
         st.markdown(f"""
 <div style="background: {_biz_bg}; border-radius: 12px;
             padding: 20px 24px; border-left: 5px solid {_biz_border}; margin-bottom: 16px;">
     <div style="font-size: 13px; font-weight: 700; color: {_biz_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 12px;">Translating Behavioral Space to KPIs</div>
-    <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: {_biz_text}; line-height: 1.6;">
+    <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; color: {_biz_text}; line-height: 1.6;">
+        <colgroup>
+            <col style="width: 30%;">
+            <col style="width: 32%;">
+            <col style="width: 38%;">
+        </colgroup>
         <tr style="border-bottom: 1px solid {_biz_border}40;">
-            <td style="padding: 8px 8px 8px 0; font-weight: 700; color: {_biz_header}; width: 28%;">What You Observe</td>
-            <td style="padding: 8px; font-weight: 700; color: {_biz_header}; width: 36%;">What It Means</td>
-            <td style="padding: 8px; font-weight: 700; color: {_biz_header}; width: 36%;">Product Action</td>
+            <td style="padding: 8px 8px 8px 0; font-weight: 700; color: {_biz_header};">What You Observe</td>
+            <td style="padding: 8px; font-weight: 700; color: {_biz_header};">What It Means</td>
+            <td style="padding: 8px; font-weight: 700; color: {_biz_header};">Product Action</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
             <td style="padding: 8px 8px 8px 0;">Intensity rising (PC1 ↑)</td>
