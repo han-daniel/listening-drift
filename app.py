@@ -532,10 +532,12 @@ def page_population():
     <div style="font-size: 13px; font-weight: 700; color: {_kf2_title}; text-transform: uppercase;
                 letter-spacing: 0.5px; margin-bottom: 8px;">More Listening Means More Exploring</div>
     <div style="font-size: 14px; color: {_kf2_text}; line-height: 1.5;">
-        Listening intensity and diversity style are strongly correlated (<b>r = 0.67</b>)
-        in the raw features, before PCA. Users in the top quartile of daily listens are
-        <b>2.2x more diverse</b> than those in the bottom quartile — heavier listeners
-        don't fixate on favorites; they branch out across artists, genres, and moods.
+        In the raw data, users who listen more also listen more broadly — top-quartile
+        listeners are <b>2.2x more diverse</b> than bottom-quartile (<b>r = 0.67</b>).
+        PCA absorbs this shared variance into PC1, so the map below separates
+        intensity from diversity. The visible downward tilt means that <i>after</i>
+        accounting for overall activity level, higher-intensity users skew slightly
+        narrower in taste.
     </div>
 </div>""", unsafe_allow_html=True)
 
