@@ -854,9 +854,8 @@ shows how the population's distribution of these traits evolves year to year.
             )
 
         st.markdown(
-            "Most transitions between windows are small, meaning listening "
-            "behavior is generally stable week to week. The right tail represents significant "
-            "behavioral shifts, which the vast majority of users experience at least once."
+            "Each bar shows how many window-to-window transitions fall at a given distance. "
+            "Taller bars near zero = stability; the long right tail = rare but real shifts."
         )
         if not movement_vals.empty:
             mean_move = movement_vals.mean()
@@ -947,16 +946,10 @@ shows how the population's distribution of these traits evolves year to year.
 
             skew_dir = "right-skewed" if mean_move > med_move else "left-skewed"
             st.markdown(
-                f"The distribution is **{skew_dir}** (mean {mean_move:.2f} vs. median {med_move:.2f}), "
-                f"indicating that a minority of large jumps pull the average up. "
-                f"**{pct_large:.1f}%** of all transitions exceed 1.0 units — these represent "
-                f"substantial behavioral shifts rather than normal variation."
-            )
-            st.markdown(
-                f"At the per-user level, **{pct_volatile:.0f}%** of users ({n_volatile}/{n_users_move}) "
-                f"have an average movement above the population mean, suggesting they are "
-                f"more behaviorally volatile. The largest single-window jump observed is "
-                f"**{max_max:.2f}** units — indicating a dramatic listening change in a short period."
+                f"The distribution is **{skew_dir}** (mean {mean_move:.2f} vs. median {med_move:.2f}). "
+                f"**{pct_volatile:.0f}%** of users ({n_volatile}/{n_users_move}) are above-average movers, "
+                f"and **{pct_large:.1f}%** of all transitions exceed 1.0 units. "
+                f"The largest single jump: **{max_max:.2f}**."
             )
 
             # ── Log-transformed distribution + Q-Q plot ──
@@ -1101,6 +1094,81 @@ shows how the population's distribution of these traits evolves year to year.
                     "would predict. People don't just drift gradually; occasionally, their "
                     "listening habits genuinely transform."
                 )
+
+        # ── Why This Matters (Business Context) ──
+        st.markdown("---")
+        st.markdown("### Why This Matters")
+        st.markdown(
+            "Every point in the behavioral space maps to something a music platform can act on. "
+            "The two axes — listening intensity and diversity style — translate directly into "
+            "signals that recommendation engines, retention teams, and product managers "
+            "already care about."
+        )
+
+        _biz_bg = "linear-gradient(135deg, #1a3a3a, #2e4a4a)" if dark else "linear-gradient(135deg, #e0f2f1, #b2dfdb)"
+        _biz_border = "#26a69a" if dark else "#00796b"
+        _biz_title = "#80cbc4" if dark else "#004d40"
+        _biz_text = "#b2dfdb" if dark else "#004d40"
+        _biz_header = "#4db6ac" if dark else "#00695c"
+
+        st.markdown(f"""
+<div style="background: {_biz_bg}; border-radius: 12px;
+            padding: 20px 24px; border-left: 5px solid {_biz_border}; margin-bottom: 16px;">
+    <div style="font-size: 13px; font-weight: 700; color: {_biz_title}; text-transform: uppercase;
+                letter-spacing: 0.5px; margin-bottom: 12px;">Translating Behavioral Space to KPIs</div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: {_biz_text}; line-height: 1.6;">
+        <tr style="border-bottom: 1px solid {_biz_border}40;">
+            <td style="padding: 8px 8px 8px 0; font-weight: 700; color: {_biz_header}; width: 28%;">What You Observe</td>
+            <td style="padding: 8px; font-weight: 700; color: {_biz_header}; width: 36%;">What It Means</td>
+            <td style="padding: 8px; font-weight: 700; color: {_biz_header}; width: 36%;">Product Action</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">Intensity rising (PC1 ↑)</td>
+            <td style="padding: 8px;">Listening more, more consistently</td>
+            <td style="padding: 8px;">Engagement deepening — premium conversion candidate</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">Intensity dropping (PC1 ↓)</td>
+            <td style="padding: 8px;">Sessions shrinking, days skipped</td>
+            <td style="padding: 8px;">Churn risk — trigger re-engagement (playlists, notifications)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">Diversity rising (PC2 ↑)</td>
+            <td style="padding: 8px;">Exploring new artists, genres, moods</td>
+            <td style="padding: 8px;">Discovery phase — surface new releases, curated playlists</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">Diversity dropping (PC2 ↓)</td>
+            <td style="padding: 8px;">Narrowing to familiar favorites</td>
+            <td style="padding: 8px;">Comfort mode — reinforce "more like this" recommendations</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">Low movement (≈ 0)</td>
+            <td style="padding: 8px;">Stable habits, autopilot listening</td>
+            <td style="padding: 8px;">Default recs work — low-touch, don't disrupt</td>
+        </tr>
+        <tr style="border-bottom: 1px solid {_biz_border}20;">
+            <td style="padding: 8px 8px 8px 0;">High movement (> 1.0)</td>
+            <td style="padding: 8px;">Significant behavioral shift in progress</td>
+            <td style="padding: 8px;">Adapt rec strategy now — old model is stale</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 8px 8px 0;">Heavy-tail event</td>
+            <td style="padding: 8px;">Dramatic reinvention of listening habits</td>
+            <td style="padding: 8px;">Highest-leverage retention moment — personalize aggressively</td>
+        </tr>
+    </table>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown(
+            "The log-normal distribution tells us **when** to intervene: most users are on autopilot "
+            "most of the time, so constant nudging is wasted effort. But when movement spikes — "
+            "detectable in real time via the rolling window — the user's current recommendation "
+            "model is stale and needs to adapt. The heavy tails mean these moments are rare per "
+            "user, but across a platform with millions of users, they're happening constantly. "
+            "A system that detects and responds to behavioral shifts can target the "
+            "**right user at the right moment**, rather than treating everyone the same."
+        )
 
     else:
         st.warning("No rolling profile data with PCA results. Run compute_rolling_profiles.py first.")
