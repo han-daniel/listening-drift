@@ -1124,42 +1124,42 @@ shows how the population's distribution of these traits evolves year to year.
             <col style="width: 38%;">
         </colgroup>
         <tr style="border-bottom: 1px solid {_biz_border}40;">
-            <td style="padding: 8px 8px 8px 0; font-weight: 700; color: {_biz_header};">What You Observe</td>
+            <td style="padding: 8px; font-weight: 700; color: {_biz_header};">What You Observe</td>
             <td style="padding: 8px; font-weight: 700; color: {_biz_header};">What It Means</td>
             <td style="padding: 8px; font-weight: 700; color: {_biz_header};">Product Action</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">Intensity rising (PC1 ↑)</td>
+            <td style="padding: 8px;">Intensity rising (PC1 ↑)</td>
             <td style="padding: 8px;">Listening more, more consistently</td>
             <td style="padding: 8px;">Engagement deepening — premium conversion candidate</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">Intensity dropping (PC1 ↓)</td>
+            <td style="padding: 8px;">Intensity dropping (PC1 ↓)</td>
             <td style="padding: 8px;">Sessions shrinking, days skipped</td>
             <td style="padding: 8px;">Churn risk — trigger re-engagement (playlists, notifications)</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">Diversity rising (PC2 ↑)</td>
+            <td style="padding: 8px;">Diversity rising (PC2 ↑)</td>
             <td style="padding: 8px;">Exploring new artists, genres, moods</td>
             <td style="padding: 8px;">Discovery phase — surface new releases, curated playlists</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">Diversity dropping (PC2 ↓)</td>
+            <td style="padding: 8px;">Diversity dropping (PC2 ↓)</td>
             <td style="padding: 8px;">Narrowing to familiar favorites</td>
             <td style="padding: 8px;">Comfort mode — reinforce "more like this" recommendations</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">Low movement (≈ 0)</td>
+            <td style="padding: 8px;">Low movement (≈ 0)</td>
             <td style="padding: 8px;">Stable habits, autopilot listening</td>
             <td style="padding: 8px;">Default recs work — low-touch, don't disrupt</td>
         </tr>
         <tr style="border-bottom: 1px solid {_biz_border}20;">
-            <td style="padding: 8px 8px 8px 0;">High movement (> 1.0)</td>
+            <td style="padding: 8px;">High movement (> 1.0)</td>
             <td style="padding: 8px;">Significant behavioral shift in progress</td>
             <td style="padding: 8px;">Adapt rec strategy now — old model is stale</td>
         </tr>
         <tr>
-            <td style="padding: 8px 8px 8px 0;">Heavy-tail event</td>
+            <td style="padding: 8px;">Heavy-tail event</td>
             <td style="padding: 8px;">Dramatic reinvention of listening habits</td>
             <td style="padding: 8px;">Highest-leverage retention moment — personalize aggressively</td>
         </tr>
