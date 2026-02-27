@@ -1760,16 +1760,32 @@ Each rolling profile has 6 features — too many to visualize directly. **PCA**
 most important variation across all users.
 
 The 6 features are first z-score standardized (mean=0, std=1), then PCA extracts
-the top 2 principal components via eigen-decomposition of the covariance matrix:
+the top 2 principal components via eigen-decomposition of the covariance matrix.
+Together they explain **~75% of total variance** (PC1 ≈ 55%, PC2 ≈ 21%).
 
-- **Overall Engagement (PC1, horizontal):** Captures the shared variance across
-  all 6 features — volume, variability, and diversity all rise together.
-  Further right = more daily listens, more artists, broader genres, more varied
-  moods, and less genre concentration.
-- **Exploration Style (PC2, vertical):** The tradeoff between volume and variety
-  after accounting for overall engagement. Higher up = fewer listens but more
-  diverse taste (exploratory). Lower = more listens but more concentrated taste
-  (focused).
+**How each feature loads onto the axes:**
+
+Because the 6 input features are strongly intercorrelated (e.g., volume and
+diversity share r = 0.67), PCA's first component absorbs this shared signal.
+The correlation between each raw feature and the two PC axes determines the
+axis labels:
+
+- **Overall Engagement (PC1, horizontal):** All 6 features correlate positively
+  with PC1 — volume, variability, artist entropy, genre entropy, mood entropy
+  all rise together, while genre concentration falls. This axis captures the
+  shared variance: overall how active and how diverse a listener is. Further
+  right = more engaged across every dimension.
+- **Exploration Style (PC2, vertical):** PC2 captures the residual tradeoff
+  *after* accounting for overall engagement. Volume and variability correlate
+  negatively with PC2, while mood entropy correlates positively and genre
+  concentration negatively. Higher up = fewer listens but more diverse taste
+  (exploratory). Lower = more listens but more concentrated taste (focused).
+
+> **Sign convention:** PCA components are sign-ambiguous (multiplying a component
+> by −1 is equally valid). The pipeline's raw output had PC1 inverted; the
+> dashboard flips it at load time so that "right = more engagement" matches
+> intuition. This doesn't affect distances, movement, or any analysis — only the
+> visual direction of the axis.
 
 This creates a map where each point is a user at a moment in time.
 Users who listen similarly end up near each other. **K-means clustering** (k=5)
@@ -1784,19 +1800,35 @@ Windows with `avg_listens > 300` are excluded as outliers before PCA fitting.
 **Movement** measures how far a user's position shifts between consecutive
 windows in the behavioral space (Euclidean distance in PCA coordinates).
 Small movement means stable habits; large movement means something changed —
-they started listening to very different music, or their volume spiked or dropped.
-
-The **comparison horizon** controls how far apart the compared windows are.
-A 7-day horizon captures week-to-week change; a 3-month horizon captures
-seasonal or life-event-driven shifts. Formally:
+their engagement increased or decreased, their taste broadened or narrowed.
 
 **movement = √((PC1ₜ − PC1ₜ₋ₛ)² + (PC2ₜ − PC2ₜ₋ₛ)²)**
 
 where *s* is the stride (number of 7-day steps between compared windows).
 
-The population distribution of movement magnitudes is displayed with mean,
-median, and 95th percentile reference lines. Per-user summaries highlight
-which listeners are most behaviorally volatile.
+The **comparison horizon** controls how far apart the compared windows are.
+A 7-day horizon captures week-to-week change; a 3-month horizon captures
+seasonal or life-event-driven shifts.
+
+**Defining "significant":** Rather than a hardcoded threshold, significant shifts
+are defined as movements above the **90th percentile** of all transitions. This
+is data-driven — only the top 10% of movements qualify, adapting to whatever
+window size and comparison horizon the user selects. The dashboard displays
+mean, median, 90th, and 95th percentile reference lines on the distribution.
+
+**Log-normal distribution:** The movement distribution is heavily right-skewed
+in raw space (mean >> median). Applying a log transform produces an approximately
+normal (bell-shaped) distribution, confirming that movement magnitudes follow a
+**log-normal pattern**. This means most transitions are small and similarly sized,
+while large shifts are exponentially rarer — but occur more often than a perfect
+normal distribution would predict (heavy tails). A Q-Q plot comparing log-transformed
+movements to a theoretical normal confirms the fit, with slight deviations only at
+the extremes.
+
+This has practical implications: week to week, most listening habits barely budge.
+When someone does shift — a jump in engagement or a change in exploration style —
+small nudges are common and dramatic overhauls are rare, but those big
+reinventions happen more often than pure chance would predict.
 
 ---
 
