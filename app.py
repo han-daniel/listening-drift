@@ -768,7 +768,15 @@ shows how the population's distribution evolves year to year.
         _tilt_diff = abs(_avg_expl_high - _avg_expl_low)
 
         st.markdown(
-            f"**What the density shows:** Notice the **upward tilt** — the high-engagement "
+            "**Reading the density map:** The color at each point represents how many "
+            "user-windows fall in that region of the space — brighter (yellow) means more users "
+            "spend time there, darker (purple) means fewer. It's a heatmap of behavioral "
+            "prevalence: not where individual users are, but where the population concentrates. "
+            "The space is divided into a fine grid, user-windows are counted per cell, and a "
+            "Gaussian blur smooths the result so patterns are visible over noise."
+        )
+        st.markdown(
+            f"**What the shape tells us:** Notice the **upward tilt** — the high-engagement "
             f"half (right) sits **{_tilt_diff:.2f} units higher** in exploration style than the "
             f"low-engagement half (left). This visually confirms the raw finding: users who listen "
             f"more also explore more broadly. The tilt exists even after PCA separates the axes, "
