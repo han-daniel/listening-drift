@@ -18,7 +18,7 @@ import os
 from urllib.parse import urlparse
 from datetime import timedelta, date
 from scipy.ndimage import gaussian_filter
-from scipy import stats
+from scipy.stats import norm as _norm
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -1022,7 +1022,7 @@ shows how the population's distribution of these traits evolves year to year.
                     # Q-Q plot: compare log movements to theoretical normal
                     sorted_log = np.sort(log_moves.values)
                     n_pts = len(sorted_log)
-                    theoretical_q = stats.norm.ppf(
+                    theoretical_q = _norm.ppf(
                         (np.arange(1, n_pts + 1) - 0.5) / n_pts,
                         loc=log_mean, scale=log_std,
                     )
