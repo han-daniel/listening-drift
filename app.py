@@ -521,8 +521,7 @@ def page_population():
                 letter-spacing: 0.5px; margin-bottom: 8px;">A Spectrum That Shifts</div>
     <div style="font-size: 14px; color: {_kf1_text}; line-height: 1.5;">
         Listeners don't fall into fixed types. Behavior is continuously distributed across intensity
-        and diversity, and <b>87% of users</b> experience at least one top-decile shift (above the 90th
-        percentile of all transitions). But these shifts are unpredictable: consistency leads 42%,
+        and diversity, and <b>87% of users</b> experience at least one top-decile shift. But these shifts are unpredictable: consistency leads 42%,
         mood 36%, simultaneously 22%.
     </div>
 </div>""", unsafe_allow_html=True)
