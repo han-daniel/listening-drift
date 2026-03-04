@@ -4,7 +4,6 @@ An interactive analytics dashboard that visualizes how music listening behavior 
 
 **[Live Demo](https://listening-drift-production.up.railway.app)**
 
-![Dashboard Screenshot](screenshot.png)
 
 ## Overview
 
