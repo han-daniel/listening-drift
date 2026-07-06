@@ -1,6 +1,6 @@
 """
 Listening Drift — Music Behavior Analytics Dashboard
-Multi-page Streamlit app backed by PostgreSQL.
+Multi-page Streamlit app backed by parquet snapshots (see export_snapshot.py).
 
 Pages:
   1. Population Overview — behavioral space animation, movement distribution
@@ -12,10 +12,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-import psycopg2
 import numpy as np
-import os
-from urllib.parse import urlparse
+from pathlib import Path
 from datetime import timedelta, date
 from scipy.ndimage import gaussian_filter
 from scipy.stats import norm as _norm
@@ -180,28 +178,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-def _parse_db_config():
-    """Use DATABASE_URL (Railway) if set, else fall back to local Postgres."""
-    url = os.environ.get("DATABASE_URL", "")
-    if url:
-        # Railway provides postgres:// but psycopg2 needs postgresql://
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql://", 1)
-        p = urlparse(url)
-        return {
-            "dbname": p.path.lstrip("/"),
-            "user": p.username,
-            "password": p.password,
-            "host": p.hostname,
-            "port": p.port or 5432,
-        }
-    return {
-        "dbname": "music_behavior",
-        "user": "danielhan",
-        "host": "localhost",
-    }
-
-DB_CONFIG = _parse_db_config()
+DATA_DIR = Path(__file__).parent / "data"
 
 PALETTE = {
     "primary":    "#636EFA",
@@ -253,40 +230,17 @@ MIN_ACTIVE_DAYS = 100
 MIN_DENSITY_PCT = 40
 
 
-# ── DB helpers ───────────────────────────────────────────────────────────────
-@st.cache_resource
-def get_connection():
-    conn = psycopg2.connect(**DB_CONFIG)
-    conn.autocommit = True
-    return conn
+# ── Data loading (parquet snapshots, see export_snapshot.py) ─────────────────
+@st.cache_data
+def _load_parquet(name):
+    return pd.read_parquet(DATA_DIR / f"{name}.parquet")
 
 
-def _get_live_connection():
-    """Return the cached connection, reconnecting if it was closed."""
-    conn = get_connection()
-    try:
-        conn.cursor().execute("SELECT 1")
-    except Exception:
-        get_connection.clear()
-        conn = get_connection()
-    return conn
-
-
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_rolling_profiles(window_size=30):
-    conn = _get_live_connection()
-    df = pd.read_sql("""
-        SELECT rp.user_id, u.username, rp.window_start, rp.window_end,
-               rp.avg_listens, rp.sd_listens, rp.avg_entropy, rp.avg_peak_hour,
-               rp.cluster_label, rp.pc1, rp.pc2, rp.movement, rp.significant_shift,
-               COALESCE(rp.avg_genre_entropy, 0) AS avg_genre_entropy,
-               COALESCE(rp.avg_mood_entropy, 0) AS avg_mood_entropy,
-               COALESCE(rp.avg_genre_concentration, 0) AS avg_genre_concentration
-        FROM user_rolling_profiles rp
-        JOIN users u ON rp.user_id = u.user_id
-        WHERE rp.window_size = %(ws)s
-        ORDER BY rp.user_id, rp.window_start
-    """, conn, params={"ws": window_size})
+    df = _load_parquet("rolling_profiles")
+    df = df.loc[df["window_size"] == window_size].drop(columns=["window_size"])
+    df = df.sort_values(["user_id", "window_start"]).reset_index(drop=True)
     # Flip PC1 sign so that right = higher engagement (more listens, more diversity).
     # PCA components are sign-ambiguous; the pipeline's convention had them inverted.
     if "pc1" in df.columns:
@@ -294,32 +248,26 @@ def load_rolling_profiles(window_size=30):
     return df
 
 
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_population_stats():
-    conn = _get_live_connection()
-    row = pd.read_sql("""
-        SELECT * FROM app_population_stats LIMIT 1
-    """, conn)
-    return row.iloc[0]
+    return _load_parquet("population_stats").iloc[0]
 
 
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_users_for_dropdown():
-    conn = _get_live_connection()
-    df = pd.read_sql("""
-        SELECT u.user_id, u.username, u.total_scrobbles,
-               COUNT(ds.date) AS summary_days,
-               MIN(ds.date) AS first_day,
-               MAX(ds.date) AS last_day,
-               MAX(ds.total_listens) AS max_daily_listens,
-               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ds.total_listens) AS median_daily_listens,
-               0 AS n_shifts
-        FROM users u
-        JOIN user_daily_summary ds ON u.user_id = ds.user_id
-        GROUP BY u.user_id, u.username, u.total_scrobbles
-        HAVING COUNT(ds.date) >= %(min_days)s
-        ORDER BY u.username
-    """, conn, params={"min_days": MIN_ACTIVE_DAYS})
+    users = _load_parquet("users")
+    daily = _load_parquet("daily_summary")
+    agg = daily.groupby("user_id").agg(
+        summary_days=("date", "count"),
+        first_day=("date", "min"),
+        last_day=("date", "max"),
+        max_daily_listens=("total_listens", "max"),
+        median_daily_listens=("total_listens", "median"),
+    ).reset_index()
+    df = users.merge(agg, on="user_id")
+    df = df.loc[df["summary_days"] >= MIN_ACTIVE_DAYS]
+    df["n_shifts"] = 0
+    df = df.sort_values("username").reset_index(drop=True)
     df["first_day"] = pd.to_datetime(df["first_day"])
     df["last_day"] = pd.to_datetime(df["last_day"])
     df["span_days"] = (df["last_day"] - df["first_day"]).dt.days + 1
@@ -332,35 +280,25 @@ def load_users_for_dropdown():
     return df
 
 
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_daily_data(user_id):
-    conn = _get_live_connection()
-    df = pd.read_sql("""
-        SELECT date, total_listens, unique_tracks, unique_artists,
-               peak_hour, listen_entropy,
-               pct_sad, pct_happy, pct_energetic, pct_chill,
-               COALESCE(genre_entropy, 0) AS genre_entropy,
-               COALESCE(mood_entropy, 0) AS mood_entropy
-        FROM user_daily_summary
-        WHERE user_id = %s
-        ORDER BY date
-    """, conn, params=(int(user_id),))
+    df = _load_parquet("daily_summary")
+    df = df.loc[df["user_id"] == int(user_id)].drop(columns=["user_id"])
+    df = df.sort_values("date").reset_index(drop=True)
     df["date"] = pd.to_datetime(df["date"])
     return df
 
 
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_hourly_data(user_id, start_date, end_date):
-    conn = _get_live_connection()
     end_exclusive = pd.Timestamp(end_date) + pd.Timedelta(days=1)
-    return pd.read_sql("""
-        SELECT day, hour, listens
-        FROM user_listen_heatmap
-        WHERE user_id = %s
-          AND day >= %s
-          AND day < %s
-        ORDER BY day, hour
-    """, conn, params=(int(user_id), str(start_date), str(end_exclusive.date())))
+    df = _load_parquet("listen_heatmap")
+    df = df.loc[
+        (df["user_id"] == int(user_id))
+        & (df["day"] >= pd.Timestamp(start_date))
+        & (df["day"] < end_exclusive)
+    ]
+    return df.drop(columns=["user_id"]).sort_values(["day", "hour"]).reset_index(drop=True)
 
 
 

@@ -2,7 +2,7 @@
 
 An interactive analytics dashboard that visualizes how music listening behavior evolves over time.
 
-**[Live Demo](https://listening-drift-production.up.railway.app)**
+**[Live Demo](https://listening-drift.streamlit.app)**
 
 
 ## Overview
@@ -18,6 +18,9 @@ Listening Drift processes 2.96M listening events across 303 Last.fm users throug
 | 3. Tag Enrichment | `lastfm_tags.py` | Maps artist tags to genre/mood categories |
 | 4. Daily Summaries | `compute_daily_summary.py` | Aggregates daily metrics: volume, entropy, mood proportions |
 | 5. Rolling Profiles | `compute_rolling_profiles.py` | Sliding window profiles (14/30/60-day), PCA, k-means, movement |
+| 6. Snapshot Export | `export_snapshot.py` | Exports the dashboard's query results to `data/*.parquet` |
+
+The dashboard reads the parquet snapshots in `data/`, so it deploys anywhere without a database. PostgreSQL is only needed to run the pipeline itself.
 
 ## Key Numbers
 
@@ -38,9 +41,9 @@ Listening Drift processes 2.96M listening events across 303 Last.fm users throug
 
 ## Tech Stack
 
-- **Data:** PostgreSQL, Python (Pandas, NumPy, SciPy, scikit-learn)
+- **Data:** PostgreSQL pipeline → parquet snapshots (Pandas, NumPy, SciPy, scikit-learn)
 - **Visualization:** Streamlit, Plotly
-- **Deployment:** Railway (app + PostgreSQL)
+- **Deployment:** Streamlit Community Cloud
 - **Data Source:** Last.fm API
 
 ## Local Development
@@ -49,12 +52,13 @@ Listening Drift processes 2.96M listening events across 303 Last.fm users throug
 # Install dependencies
 pip install -r requirements.txt
 
-# Set up PostgreSQL database named music_behavior
-# Run pipeline scripts in order (1-5)
-
-# Launch dashboard
+# Launch dashboard (reads the committed data/*.parquet snapshots)
 streamlit run app.py
 ```
+
+To regenerate the data from scratch: set up a PostgreSQL database named
+`music_behavior`, install `psycopg2-binary`, run pipeline scripts in order
+(1–5), then `python export_snapshot.py` to refresh the snapshots.
 
 ## License
 
