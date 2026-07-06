@@ -1,9 +1,8 @@
-streamlit==1.54.0
-pandas==2.0.3
-plotly==5.9.0
-numpy==1.26.4
-scikit-learn==1.3.0
-scipy==1.16.2
-pyarrow>=11.0.0
+streamlit>=1.54
+pandas>=2.2
+plotly>=5.9,<6
+numpy>=1.26
+scipy>=1.11
+pyarrow>=14
 # Pipeline scripts (discover/ingest/compute_*, export_snapshot) additionally need:
-# psycopg2-binary==2.9.11
+# psycopg2-binary and scikit-learn
